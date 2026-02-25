@@ -11,6 +11,19 @@ Analisi della qualità aziendale con focus sul **Cash Ratio** (Cassa + Investime
 Il sistema confronta i dati annuali con gli ultimi trimestrali per rilevare variazioni nella solvibilità.
 """)
 
+# --- FUNZIONE CACHE (Ottimizzazione velocità) ---
+@st.cache_data(ttl=21600) # I dati vengono salvati per 6 ore (21600 secondi)
+def get_stock_data(symbol):
+    stock = yf.Ticker(symbol.strip().upper().replace('.', '-'))
+    # Scarichiamo i dati necessari in un colpo solo per popolare la cache
+    return {
+        "info": stock.info,
+        "bs": stock.balance_sheet,
+        "is_stmt": stock.financials,
+        "cf": stock.cashflow,
+        "bs_q": stock.quarterly_balance_sheet
+    }
+
 def get_val(df, keys, row_idx=0):
     if df is None or df.empty: return 0
     df.index = df.index.str.strip()
@@ -30,12 +43,9 @@ def calculate_rating(punteggio):
 
 def analyze_efficiency(symbol):
     try:
-        stock = yf.Ticker(symbol.strip().upper().replace('.', '-'))
-        info = stock.info
-        bs = stock.balance_sheet
-        is_stmt = stock.financials
-        cf = stock.cashflow
-        bs_q = stock.quarterly_balance_sheet
+        # Usiamo la funzione con cache
+        data = get_stock_data(symbol)
+        info, bs, is_stmt, cf, bs_q = data["info"], data["bs"], data["is_stmt"], data["cf"], data["bs_q"]
         
         if bs.empty or is_stmt.empty or bs_q.empty: return None
 
@@ -50,7 +60,6 @@ def analyze_efficiency(symbol):
         cash_debt_ann = get_cash_ratio(bs)
         cash_debt_q = get_cash_ratio(bs_q)
         
-        # Calcolo Variazione (Trend)
         trend_val = ((cash_debt_q - cash_debt_ann) / cash_debt_ann) * 100 if cash_debt_ann > 0 else 0
         trend_icon = "📈" if trend_val > 0 else "📉"
         trend_label = f"{trend_icon} {trend_val:+.1f}%"
@@ -59,8 +68,7 @@ def analyze_efficiency(symbol):
         roe = info.get('returnOnEquity', 0) or 0
         margin = info.get('profitMargins', 0) or 0
         debt_equity = (info.get('debtToEquity', 0) or 0) / 100
-        div_yield = info.get('dividendYield', 0) or 0
-
+        
         # Altman Z-Score
         total_assets = get_val(bs, ['Total Assets'])
         working_cap = get_val(bs, ['Working Capital'])
@@ -144,24 +152,33 @@ if uploaded_file:
                             .applymap(color_trend, subset=['Trend C/D (Q vs A)'])
             )
             
-            # --- BLOCCO INFO AGGIORNATO ---
+            # --- LEGENDA E GRAFICO ---
             st.markdown("---")
-            st.info(f"""
-            ### 🧠 Guida all'interpretazione dei dati
+            col1, col2 = st.columns([1, 1])
             
-            **Indicatori di Rischio e Forza:**
-            * **Altman Z-Score:** > 3.0 Sano | < 1.8 Rischio Fallimento elevato.
-            * **Piotroski (5pt):** Indica la forza operativa (massimo in questa versione: 5).
-            * **Cash/Debt:** > 1 significa che l'azienda può ripagare tutto il debito con la cassa immediata.
-            
-            **Sistema di Rating:**
-            * **A+ / A:** Aziende con alta redditività (ROE), cassa abbondante rispetto ai debiti e Z-score in zona sicurezza.
-            * **C / D:** Aziende con margini bassi o debiti che superano di molto la liquidità immediata.
-            * **F:** Segnale d'allarme rosso. Bassa cassa, Z-score sotto 1.8 e ROE negativo.
-            """)
-            
+            with col1:
+                st.info(f"""
+                ### 🧠 Guida all'interpretazione
+                **Indicatori:**
+                * **Altman Z-Score:** > 3.0 Sano | < 1.8 Pericolo.
+                * **Piotroski (5pt):** Forza operativa (Max: 5).
+                * **Cash/Debt:** > 1 Copertura totale debito con cassa.
+                
+                **Rating:**
+                * **A+/A:** Alta qualità e sicurezza.
+                * **C/D:** Margini bassi o debito alto.
+                * **F:** Allarme rosso (Z-Score < 1.8 & ROE < 0).
+                """)
+
+            with col2:
+                st.write("### 📊 Scala del Rischio (Altman Z)")
+                # Visualizzazione grafica dello Z-Score
+                
+                st.caption("Lo Z-Score predice la probabilità di insolvenza entro 2 anni.")
+
         else:
             st.error("Dati non disponibili per i ticker selezionati.")
 else:
     st.info("💡 Carica il file 'lista_ticker.csv' dalla barra laterale per iniziare.")
+
 
