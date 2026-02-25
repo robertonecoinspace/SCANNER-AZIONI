@@ -146,9 +146,24 @@ if uploaded_file:
                             .applymap(color_trend, subset=['Trend C/D (Q vs A)'])
             )
             
-            st.info("""
-            **Note sul Trend:** - Una 📈 indica che l'azienda ha migliorato la sua liquidità immediata nell'ultimo trimestre rispetto alla media dell'anno.
-            - Una 📉 indica un potenziale aumento del debito o una riduzione della cassa disponibile.
+           # --- PARTE FINALE AGGIORNATA ---
+            st.markdown("---")
+            st.info(f"""
+            ### 🧠 Guida all'interpretazione dei dati
+            
+            **Indicatori di Rischio e Forza:**
+            * **Altman Z-Score:** > 3.0 Sano | < 1.8 Rischio Fallimento elevato.
+            * **Piotroski (5pt):** Indica la forza operativa (calcolato su 5 parametri chiave).
+            * **Cash/Debt:** > 1 significa che l'azienda può ripagare tutto il debito con la cassa immediata.
+            
+            **Sistema di Rating:**
+            * **A+ / A:** Aziende con alta redditività (ROE), cassa abbondante rispetto ai debiti e Z-score in zona sicurezza.
+            * **C / D:** Aziende con margini bassi o debiti che superano di molto la liquidità immediata.
+            * **F:** Segnale d'allarme rosso. Bassa cassa, Z-score sotto 1.8 e ROE negativo.
             """)
-        else:
-            st.error("Dati non disponibili per i ticker selezionati.")
+
+            # Inserisco uno schema visuale per lo Z-Score di Altman
+            
+
+            st.success(f"Analisi completata con successo su {len(df_res)} titoli.")
+
