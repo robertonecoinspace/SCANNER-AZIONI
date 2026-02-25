@@ -2,6 +2,7 @@ import streamlit as st
 import yfinance as yf
 import pandas as pd
 
+# Configurazione Pagina
 st.set_page_config(page_title="Corporate Efficiency Rating & Trend", layout="wide")
 
 st.title("🏆 Rating di Efficienza e Trend di Solidità")
@@ -40,10 +41,8 @@ def analyze_efficiency(symbol):
 
         # --- 1. CASH / DEBT (FORMULA TRADINGVIEW) ---
         def get_cash_ratio(balance_df):
-            # Somma Cassa e Investimenti a breve termine
             cash = get_val(balance_df, ['Cash And Cash Equivalents', 'Cash'])
             short_term_inv = get_val(balance_df, ['Short Term Investments', 'Other Short Term Investments', 'Cash Cash Equivalents And Short Term Investments'])
-            # Se yfinance ha già la voce aggregata usiamo quella, altrimenti sommiamo
             total_liquidity = max(cash + short_term_inv, get_val(balance_df, ['Cash Cash Equivalents And Short Term Investments']))
             debt = get_val(balance_df, ['Total Debt'])
             return total_liquidity / debt if debt > 0 else 5.0
@@ -90,7 +89,6 @@ def analyze_efficiency(symbol):
         score += 15 if margin > 0.15 else 5
         score += 20 * (f_score / 5)
         
-        # Bonus/Malus Trend
         if trend_val > 5: score += 5
         if trend_val < -10: score -= 5
         
@@ -146,14 +144,14 @@ if uploaded_file:
                             .applymap(color_trend, subset=['Trend C/D (Q vs A)'])
             )
             
-           # --- PARTE FINALE AGGIORNATA ---
+            # --- BLOCCO INFO AGGIORNATO ---
             st.markdown("---")
             st.info(f"""
             ### 🧠 Guida all'interpretazione dei dati
             
             **Indicatori di Rischio e Forza:**
             * **Altman Z-Score:** > 3.0 Sano | < 1.8 Rischio Fallimento elevato.
-            * **Piotroski (5pt):** Indica la forza operativa (calcolato su 5 parametri chiave).
+            * **Piotroski (5pt):** Indica la forza operativa (massimo in questa versione: 5).
             * **Cash/Debt:** > 1 significa che l'azienda può ripagare tutto il debito con la cassa immediata.
             
             **Sistema di Rating:**
@@ -161,9 +159,9 @@ if uploaded_file:
             * **C / D:** Aziende con margini bassi o debiti che superano di molto la liquidità immediata.
             * **F:** Segnale d'allarme rosso. Bassa cassa, Z-score sotto 1.8 e ROE negativo.
             """)
-
-            # Inserisco uno schema visuale per lo Z-Score di Altman
             
-
-            st.success(f"Analisi completata con successo su {len(df_res)} titoli.")
+        else:
+            st.error("Dati non disponibili per i ticker selezionati.")
+else:
+    st.info("💡 Carica il file 'lista_ticker.csv' dalla barra laterale per iniziare.")
 
