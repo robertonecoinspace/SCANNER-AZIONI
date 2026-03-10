@@ -182,3 +182,4 @@ else:
     st.info("💡 Carica il file 'lista_ticker.csv' dalla barra laterale per iniziare.")
 
 
+
