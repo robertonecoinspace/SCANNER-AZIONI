@@ -147,10 +147,9 @@ if uploaded_file:
                 return ''
 
             st.subheader("📋 Risultati Scanner di Efficienza")
-            st.dataframe(
-                df_res.style.map(color_rating, subset=['Rating']
-                            .map(color_trend, subset=['Trend C/D (Q vs A)'])
-            )
+               st.dataframe(
+    df_res.style.map(color_rating, subset=['Rating']).map(color_trend, subset=['Trend C/D (Q vs A)'])
+)
             
             # --- LEGENDA E GRAFICO ---
             st.markdown("---")
